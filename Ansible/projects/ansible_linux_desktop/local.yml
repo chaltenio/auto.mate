@@ -1,0 +1,160 @@
+---
+- hosts: chlenovo 
+  connection: local
+  vars:
+    terraform_version: 1.0.0
+    terraform_dir: "/opt/terraform"
+  become: true
+
+  tasks:
+    - name: Update and upgrade apt packages
+      become: true
+      apt:
+        upgrade: 'yes'
+        update_cache: yes
+        cache_valid_time: 86400 #one day
+
+    - name: install packages & Applications
+      package:
+        name:
+          - htop
+          - tmux
+          - vim-nox
+          - python3-psutil
+          - wget
+          - apt-transport-https
+          - ca-certificates
+          - gnupg-agent
+          - curl
+          - software-properties-common
+          - filezilla
+          - hardinfo
+          - net-tools
+          - openssh-server
+          - gimp
+        state: present
+        update_cache: yes
+
+    # Install Applications
+    - name: install application with snap
+      snap:
+        name:
+          - postman
+          - chromium
+          - docker
+          - vlc
+        classic: yes
+
+    # Install Visual Studio Code
+    - name: install key MS (apt)
+      become: yes
+      apt_key:
+        url: "https://packages.microsoft.com/keys/microsoft.asc"
+        state: present
+
+    - name: install VS Code repo (apt)
+      become: yes
+      apt_repository:
+        repo: "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main"
+        filename: vscode
+        state: present
+
+    - name: Install VS Code (apt)
+      become: yes
+      apt:
+        name: code
+        state: latest
+        update_cache: yes
+
+    - name: Install extensions Visual Studio Code
+      become: yes
+      become_user: chmazur
+      command: "code --install-extension {{item}}"
+      loop:
+        - ms-dotnettools.csharp
+        - vscode-icons-team.vscode-icons
+        - ms-mssql.mssql
+        - ms-azuretools.vscode-docker
+        - vscoss.vscode-ansible
+        - ms-vscode.vscode-node-azure-pack
+        - ms-azuretools.vscode-azureappservice
+        - eamodio.gitlens
+        - github.vscode-pull-request-github
+        - golang.go
+        - ms-vscode-remote.remote-ssh
+        - msjsdiag.debugger-for-chrome
+        - esbenp.prettier-vscode
+        - dsznajder.es7-react-js-snippets
+        - ecmel.vscode-html-css
+
+  # Install dotnet 5
+    - name: Download MS product repository
+      get_url:
+        url: https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
+        dest: /tmp/packages-microsoft-prod.deb
+
+    - name: Add the package repository
+      become: yes
+      command: "dpkg -i /tmp/packages-microsoft-prod.deb"        
+
+    - name: Install MS product repository
+      apt: deb=/tmp/packages-microsoft-prod.deb
+      become: yes
+
+    - name: Add the package repository
+      become: yes
+      command: "rm /tmp/packages-microsoft-prod.deb"   
+
+    - name: Remove the package repository
+      become: yes
+      command: "rm /tmp/packages-microsoft-prod.deb"  
+
+    - name: Install .NET Core SDK
+      apt:
+        name: dotnet-sdk-5.0
+        state: present
+        update_cache: yes
+      become: yes
+
+  # Install Zoom
+    - name: Download Zoom
+      get_url:
+        url: https://zoom.us/client/latest/zoom_amd64.deb
+        dest: /tmp/zoom_amd64.deb
+
+    - name: Install gdebi
+      become: yes
+      apt:
+        name: gdebi
+        state: latest
+        update_cache: yes
+  
+    - name: Add the package repository
+      become: yes
+      command: chdir=/tmp apt install ./zoom_amd64.deb
+
+  # Install Docker
+  #  - name: Adding GPG
+  #    become: yes
+  #    apt_key:
+  #      url: https://download.docker.com/linux/ubuntu/gpg
+  #      state: present
+
+  #  - name: Adding repository Docker
+  #    apt_repository:
+  #      repo: deb h[arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+  #      state: present
+
+  #  - name: Update apt packages
+  #    become: true
+  #    apt:        
+  #      update_cache: yes
+  #      apt-cache policy docker-ce
+
+    - name: copy .bashrc file
+      copy:
+        src: files/bashrc
+        dest: /home/chmazur/.bashrc
+        owner: chmazur
+        group: chmazur
+
